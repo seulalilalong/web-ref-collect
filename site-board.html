@@ -39,11 +39,12 @@ button{font:inherit;color:inherit;cursor:pointer}
 .card.is-nope{opacity:.45;border-style:dashed}.card.is-nope img{filter:grayscale(1)}
 .card.was-nope:not(.has){opacity:.6}
 .shot{display:block;aspect-ratio:3/4;overflow:hidden;background:var(--line)}
+.shot.wide{aspect-ratio:16/10}
 .shot img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
 .shot.txt{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:16px;color:var(--ink);text-decoration:none;font-size:14px;aspect-ratio:auto;min-height:110px}
 .shot.txt span{color:var(--mute);font-size:12.5px}
 .card.broken .shot img{display:none}
-.card.broken .shot::after{content:"그림이 안 떠요 — 눌러서 핀을 열어 보세요";display:block;padding:16px;color:var(--mute);font-size:13px}
+.card.broken .shot::after{content:"그림이 안 떠요 — 눌러서 원본을 열어 보세요";display:block;padding:16px;color:var(--mute);font-size:13px}
 .code{position:absolute;top:8px;left:8px;background:var(--ink);color:var(--bg);font-weight:700;font-size:12px;padding:2px 9px;border-radius:999px}
 .card.has .code{background:var(--accent);color:var(--accent-ink)}
 .badge{position:absolute;top:8px;right:8px;background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
@@ -63,6 +64,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .thumbs{display:flex;flex-wrap:wrap;gap:10px}
 .thumbs figure{margin:0;width:120px}
 .thumbs img{width:120px;height:150px;object-fit:cover;object-position:top;border-radius:6px;display:block;border:1px solid var(--line);background:var(--line)}
+.thumbs figure.w{width:180px}.thumbs figure.w img{width:180px;height:112px}
 .thumbs .noimg{width:120px;height:150px;border-radius:6px;border:1px solid var(--line);display:grid;place-items:center;font-size:12px;color:var(--mute);text-align:center;padding:6px}
 .thumbs figcaption{font-size:12px;color:var(--mute);margin-top:3px;line-height:1.35}
 .thumbs figcaption b{color:var(--ink)}
@@ -124,7 +126,7 @@ function hashOf(v){var m=String(v||'').match(/[0-9a-f]{32}/);return m?m[0]:''}
 /* 카드 목록 — 같은 그림은 한 번만(맨 앞 묶음이 먼저) */
 var cards=[],seen={},pre=UI?'U':'';
 (B.picks||[]).forEach(function(p,i){var code=p.code||('첫'+(i+1));if(p.pin)seen[p.pin]=1;var h=hashOf(p.img);if(h)seen[h]=1;
-  cards.push({id:'pick:'+code,g:'_picks',code:code,pick:1,img:imgOf(p.img),pin:p.pin||'',link:p.pin?pinUrl(p.pin):(p.link||''),q:p.q||'',title:p.title||'',line:p.line||'',from:p.from||'첫 판',was:p.v||'like',memo0:p.memo||''})});
+  var im=imgOf(p.img);cards.push({id:'pick:'+code,g:'_picks',code:code,pick:1,img:im,wide:!!im&&!/pinimg\.com/.test(im),pin:p.pin||'',link:p.pin?pinUrl(p.pin):(p.link||''),q:p.q||'',title:p.title||'',line:p.line||'',tags:p.tags||'',from:p.from||'첫 판',was:p.v||'like',memo0:p.memo||''})});
 B.groups.forEach(function(g){var n=0;(g.rows||[]).forEach(function(r){String(r.c||'').trim().split(/\s+/).forEach(function(tok){if(!tok)return;var k=tok.split(':'),pin=k[0],hv=k[1]||'',h=hv.split('.')[0];if(!pin||!h||seen[pin]||seen[h])return;seen[pin]=seen[h]=1;n++;
   cards.push({id:pin,g:g.key,code:pre+g.key+(n<10?'0':'')+n,img:imgOf(hv),pin:pin,link:pinUrl(pin),q:r.q||''})})});g._n=n});
 var byId={};cards.forEach(function(c){byId[c.id]=c});
@@ -132,10 +134,10 @@ function st(id){return S[id]||(S[id]={tags:[],nope:false,memo:''})}
 function get(id){var s=S[id];return s&&s.tags?s:{tags:[],nope:false,memo:''}}
 /* 그리기 */
 function cardHtml(c){var shot;
-  if(c.img)shot='<a class="shot" href="'+esc(c.link||c.img)+'" target="_blank" rel="noopener" title="핀 열기"><img loading="lazy" src="'+esc(c.img)+'" alt=""></a>';
+  if(c.img)shot='<a class="shot'+(c.wide?' wide':'')+'" href="'+esc(c.link||c.img)+'" target="_blank" rel="noopener" title="'+(c.pin?'핀 열기':'사이트 열기')+'"><img loading="lazy" src="'+esc(c.img)+'" alt=""></a>';
   else shot='<a class="shot txt" href="'+esc(c.link)+'" target="_blank" rel="noopener"><b>'+esc(c.title||c.code)+'</b><span>그림은 첫 판에서 보세요 · 누르면 사이트가 열려요</span></a>';
   var badge=c.pick?'<span class="badge first'+(c.was==='nope'?' no':'')+'">'+esc(c.from)+(c.was==='nope'?' ✕':' ♥')+'</span>':(isWeb(c.q)?'<span class="badge">웹사이트</span>':'');
-  var q=c.pick?[c.title&&c.img?c.title:'',c.line,c.memo0?'메모: '+c.memo0:''].filter(Boolean).join(' · '):(c.q?'검색어 「'+c.q+'」':'');
+  var q=c.pick?[c.title&&c.img?c.title:'',c.tags?'첫 판 칸: '+c.tags:'',c.line,c.memo0?'메모: '+c.memo0:''].filter(Boolean).join(' · '):(c.q?'검색어 「'+c.q+'」':'');
   return '<article class="card'+(c.pick&&c.was==='nope'?' was-nope':'')+'" data-id="'+esc(c.id)+'">'+shot+'<span class="code">'+esc(c.code)+'</span>'+badge+
   '<div class="meta">'+(q?'<p class="q">'+esc(q)+'</p>':'')+'<div class="chips">'+TAGS.map(function(t){return'<button type="button" class="chip" data-tag="'+t[0]+'" aria-pressed="false">'+t[1]+'</button>'}).join('')+'</div>'+
   '<button type="button" class="nope" aria-pressed="false">✕ 이건 싫다</button><input class="memo" type="text" placeholder="무엇이 좋은지 / 싫은지 한 줄" aria-label="'+esc(c.code)+' 메모"></div></article>'}
@@ -143,7 +145,7 @@ var groups=[];if((B.picks||[]).length)groups.push({key:'_picks',label:'첫 판',
 B.groups.forEach(function(g){if(g._n)groups.push({key:g.key,label:pre+g.key,name:g.name,desc:g.desc||''})});
 var h='<header class="top"><small>'+esc(B.course||'AI 브랜드 웹사이트 4주 과정')+' · '+esc(B.name)+' · '+(UI?'UI 맞춤 판':'사이트 맞춤 판')+'</small>'+
   '<h1>'+(UI?'화면의 부품과 결을 고르세요':'마음에 닿는 사이트를 고르세요')+'</h1>'+
-  '<p>첫 판에서 고르신 카드와 브리프로 핀터레스트를 한 번 더 모았어요. 카드마다 <b>쓰임새 칸</b>을 눌러 주세요. 한 카드에 여러 칸을 눌러도 되고, 마음에 안 들면 <b>✕ 이건 싫다</b>. 그림을 누르면 핀터레스트 원본이 열려요.</p>'+
+  '<p>첫 판에서 고르신 카드와 브리프로 핀터레스트를 한 번 더 모았어요. 카드마다 <b>쓰임새 칸</b>을 눌러 주세요. 한 카드에 여러 칸을 눌러도 되고, 마음에 안 들면 <b>✕ 이건 싫다</b>. 그림을 누르면 원본(핀터레스트 핀 · 웹사이트 카드는 그 사이트)이 열려요.</p>'+
   '<p>고른 것은 <b>이 컴퓨터의 이 브라우저에만</b> 남아요. 다 고르면 아래 「골라 둔 것 복사」를 눌러 Claude에게 붙여 넣어 주세요.</p>'+
   '<div class="legend">'+(UI?'<span><b>전체 UI 결</b> 부품 전체의 말투</span><span><b>메뉴</b> 맨 위 길잡이</span><span><b>버튼</b> 누르는 것</span><span><b>카드</b> 정보 한 장을 담는 상자</span><span><b>칸</b> 페이지를 나누는 구역과 그 경계</span><span><b>아이콘</b> 작은 그림</span><span><b>장식</b> 테이프·우표 같은 꾸밈</span>':'<span><b>전체 무드</b> 사이트 전체 분위기</span><span><b>첫 화면</b> 들어오자마자 보이는 화면</span><span><b>넣고 싶은 요소</b> 글꼴·사진틀·재질 같은 부분</span>')+'</div>';
 if((B.common||[]).length||(B.avoid||[]).length)h+='<div class="gyeol"><h2>이 판을 모은 결</h2><ul>'+(B.common||[]).map(function(x){return'<li>'+esc(x)+'</li>'}).join('')+'</ul>'+((B.avoid||[]).length?'<p class="avoid">피한 결 · '+(B.avoid||[]).map(esc).join(' · ')+'</p>':'')+'</div>';
@@ -165,7 +167,7 @@ function counts(){var p=0,n=0,need=[];cards.forEach(function(c){var s=get(c.id);
   if(!UI){if(!cards.some(function(c){return get(c.id).tags.indexOf('hero')>=0}))need.push('「첫 화면」');if(!n)need.push('「이건 싫다」')}
   document.getElementById('hint').textContent=need.length?need.join(' · ')+' 칸에 하나 이상 골라 주세요':''}
 function used(fn){return cards.filter(function(c){return fn(get(c.id))})}
-function fig(c){var s=get(c.id);return'<figure>'+(c.img?'<img loading="lazy" src="'+esc(c.img)+'" alt="">':'<div class="noimg">'+esc(c.title||c.code)+'</div>')+'<figcaption><b>'+esc(c.code)+'</b>'+(s.memo?' '+esc(s.memo):'')+'</figcaption></figure>'}
+function fig(c){var s=get(c.id);return'<figure'+(c.wide?' class="w"':'')+'>'+(c.img?'<img loading="lazy" src="'+esc(c.img)+'" alt="">':'<div class="noimg">'+esc(c.title||c.code)+'</div>')+'<figcaption><b>'+esc(c.code)+'</b>'+(s.memo?' '+esc(s.memo):'')+'</figcaption></figure>'}
 function summary(){var h='';TAGS.forEach(function(t){var l=used(function(s){return s.tags.indexOf(t[0])>=0});h+='<h2>'+t[1]+'</h2>'+(l.length?'<div class="thumbs">'+l.map(fig).join('')+'</div>':'<p class="none">아직 없음</p>')});
   var no=used(function(s){return s.nope});h+='<h2>✕ 이건 싫다</h2>'+(no.length?'<div class="thumbs">'+no.map(fig).join('')+'</div>':'<p class="none">아직 없음</p>');document.getElementById('sum').innerHTML=h}
 function text(){var L=['['+(UI?'UI':'사이트')+' 맞춤 판에서 고른 것] '+B.name+(B.made?' · '+B.made:'')];
